@@ -1,0 +1,1 @@
+/usr/bin/c++    -rdynamic CMakeFiles/dzy_curve.dir/src/image.cpp.o CMakeFiles/dzy_curve.dir/src/main.cpp.o CMakeFiles/dzy_curve.dir/src/scene.cpp.o CMakeFiles/dzy_curve.dir/src/texture.cpp.o  -o ../bin/dzy_curve  deps/vecmath/libvecmath.a 

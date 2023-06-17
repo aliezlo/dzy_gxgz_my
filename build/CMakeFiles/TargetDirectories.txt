@@ -1,6 +1,6 @@
 /mnt/c/Users/zz/Desktop/picture_lab/dzy/dz_my/build/CMakeFiles/rebuild_cache.dir
 /mnt/c/Users/zz/Desktop/picture_lab/dzy/dz_my/build/CMakeFiles/edit_cache.dir
-/mnt/c/Users/zz/Desktop/picture_lab/dzy/dz_my/build/CMakeFiles/dzy.dir
+/mnt/c/Users/zz/Desktop/picture_lab/dzy/dz_my/build/CMakeFiles/dzy_curve.dir
 /mnt/c/Users/zz/Desktop/picture_lab/dzy/dz_my/build/deps/vecmath/CMakeFiles/rebuild_cache.dir
 /mnt/c/Users/zz/Desktop/picture_lab/dzy/dz_my/build/deps/vecmath/CMakeFiles/edit_cache.dir
 /mnt/c/Users/zz/Desktop/picture_lab/dzy/dz_my/build/deps/vecmath/CMakeFiles/vecmath.dir

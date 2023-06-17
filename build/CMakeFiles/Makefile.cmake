@@ -96,6 +96,6 @@ set(CMAKE_MAKEFILE_PRODUCTS
 
 # Dependency information for all targets:
 set(CMAKE_DEPEND_INFO_FILES
-  "CMakeFiles/dzy.dir/DependInfo.cmake"
+  "CMakeFiles/dzy_curve.dir/DependInfo.cmake"
   "deps/vecmath/CMakeFiles/vecmath.dir/DependInfo.cmake"
   )

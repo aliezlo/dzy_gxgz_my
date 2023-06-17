@@ -111,17 +111,17 @@ depend:
 .PHONY : depend
 
 #=============================================================================
-# Target rules for targets named dzy
+# Target rules for targets named dzy_curve
 
 # Build rule for target.
-dzy: cmake_check_build_system
-	$(MAKE) -f CMakeFiles/Makefile2 dzy
-.PHONY : dzy
+dzy_curve: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 dzy_curve
+.PHONY : dzy_curve
 
 # fast build rule for target.
-dzy/fast:
-	$(MAKE) -f CMakeFiles/dzy.dir/build.make CMakeFiles/dzy.dir/build
-.PHONY : dzy/fast
+dzy_curve/fast:
+	$(MAKE) -f CMakeFiles/dzy_curve.dir/build.make CMakeFiles/dzy_curve.dir/build
+.PHONY : dzy_curve/fast
 
 #=============================================================================
 # Target rules for targets named vecmath
@@ -142,7 +142,7 @@ src/image.o: src/image.cpp.o
 
 # target to build an object file
 src/image.cpp.o:
-	$(MAKE) -f CMakeFiles/dzy.dir/build.make CMakeFiles/dzy.dir/src/image.cpp.o
+	$(MAKE) -f CMakeFiles/dzy_curve.dir/build.make CMakeFiles/dzy_curve.dir/src/image.cpp.o
 .PHONY : src/image.cpp.o
 
 src/image.i: src/image.cpp.i
@@ -151,7 +151,7 @@ src/image.i: src/image.cpp.i
 
 # target to preprocess a source file
 src/image.cpp.i:
-	$(MAKE) -f CMakeFiles/dzy.dir/build.make CMakeFiles/dzy.dir/src/image.cpp.i
+	$(MAKE) -f CMakeFiles/dzy_curve.dir/build.make CMakeFiles/dzy_curve.dir/src/image.cpp.i
 .PHONY : src/image.cpp.i
 
 src/image.s: src/image.cpp.s
@@ -160,7 +160,7 @@ src/image.s: src/image.cpp.s
 
 # target to generate assembly for a file
 src/image.cpp.s:
-	$(MAKE) -f CMakeFiles/dzy.dir/build.make CMakeFiles/dzy.dir/src/image.cpp.s
+	$(MAKE) -f CMakeFiles/dzy_curve.dir/build.make CMakeFiles/dzy_curve.dir/src/image.cpp.s
 .PHONY : src/image.cpp.s
 
 src/main.o: src/main.cpp.o
@@ -169,7 +169,7 @@ src/main.o: src/main.cpp.o
 
 # target to build an object file
 src/main.cpp.o:
-	$(MAKE) -f CMakeFiles/dzy.dir/build.make CMakeFiles/dzy.dir/src/main.cpp.o
+	$(MAKE) -f CMakeFiles/dzy_curve.dir/build.make CMakeFiles/dzy_curve.dir/src/main.cpp.o
 .PHONY : src/main.cpp.o
 
 src/main.i: src/main.cpp.i
@@ -178,7 +178,7 @@ src/main.i: src/main.cpp.i
 
 # target to preprocess a source file
 src/main.cpp.i:
-	$(MAKE) -f CMakeFiles/dzy.dir/build.make CMakeFiles/dzy.dir/src/main.cpp.i
+	$(MAKE) -f CMakeFiles/dzy_curve.dir/build.make CMakeFiles/dzy_curve.dir/src/main.cpp.i
 .PHONY : src/main.cpp.i
 
 src/main.s: src/main.cpp.s
@@ -187,7 +187,7 @@ src/main.s: src/main.cpp.s
 
 # target to generate assembly for a file
 src/main.cpp.s:
-	$(MAKE) -f CMakeFiles/dzy.dir/build.make CMakeFiles/dzy.dir/src/main.cpp.s
+	$(MAKE) -f CMakeFiles/dzy_curve.dir/build.make CMakeFiles/dzy_curve.dir/src/main.cpp.s
 .PHONY : src/main.cpp.s
 
 src/scene.o: src/scene.cpp.o
@@ -196,7 +196,7 @@ src/scene.o: src/scene.cpp.o
 
 # target to build an object file
 src/scene.cpp.o:
-	$(MAKE) -f CMakeFiles/dzy.dir/build.make CMakeFiles/dzy.dir/src/scene.cpp.o
+	$(MAKE) -f CMakeFiles/dzy_curve.dir/build.make CMakeFiles/dzy_curve.dir/src/scene.cpp.o
 .PHONY : src/scene.cpp.o
 
 src/scene.i: src/scene.cpp.i
@@ -205,7 +205,7 @@ src/scene.i: src/scene.cpp.i
 
 # target to preprocess a source file
 src/scene.cpp.i:
-	$(MAKE) -f CMakeFiles/dzy.dir/build.make CMakeFiles/dzy.dir/src/scene.cpp.i
+	$(MAKE) -f CMakeFiles/dzy_curve.dir/build.make CMakeFiles/dzy_curve.dir/src/scene.cpp.i
 .PHONY : src/scene.cpp.i
 
 src/scene.s: src/scene.cpp.s
@@ -214,7 +214,7 @@ src/scene.s: src/scene.cpp.s
 
 # target to generate assembly for a file
 src/scene.cpp.s:
-	$(MAKE) -f CMakeFiles/dzy.dir/build.make CMakeFiles/dzy.dir/src/scene.cpp.s
+	$(MAKE) -f CMakeFiles/dzy_curve.dir/build.make CMakeFiles/dzy_curve.dir/src/scene.cpp.s
 .PHONY : src/scene.cpp.s
 
 src/texture.o: src/texture.cpp.o
@@ -223,7 +223,7 @@ src/texture.o: src/texture.cpp.o
 
 # target to build an object file
 src/texture.cpp.o:
-	$(MAKE) -f CMakeFiles/dzy.dir/build.make CMakeFiles/dzy.dir/src/texture.cpp.o
+	$(MAKE) -f CMakeFiles/dzy_curve.dir/build.make CMakeFiles/dzy_curve.dir/src/texture.cpp.o
 .PHONY : src/texture.cpp.o
 
 src/texture.i: src/texture.cpp.i
@@ -232,7 +232,7 @@ src/texture.i: src/texture.cpp.i
 
 # target to preprocess a source file
 src/texture.cpp.i:
-	$(MAKE) -f CMakeFiles/dzy.dir/build.make CMakeFiles/dzy.dir/src/texture.cpp.i
+	$(MAKE) -f CMakeFiles/dzy_curve.dir/build.make CMakeFiles/dzy_curve.dir/src/texture.cpp.i
 .PHONY : src/texture.cpp.i
 
 src/texture.s: src/texture.cpp.s
@@ -241,7 +241,7 @@ src/texture.s: src/texture.cpp.s
 
 # target to generate assembly for a file
 src/texture.cpp.s:
-	$(MAKE) -f CMakeFiles/dzy.dir/build.make CMakeFiles/dzy.dir/src/texture.cpp.s
+	$(MAKE) -f CMakeFiles/dzy_curve.dir/build.make CMakeFiles/dzy_curve.dir/src/texture.cpp.s
 .PHONY : src/texture.cpp.s
 
 # Help Target
@@ -252,7 +252,7 @@ help:
 	@echo "... depend"
 	@echo "... rebuild_cache"
 	@echo "... edit_cache"
-	@echo "... dzy"
+	@echo "... dzy_curve"
 	@echo "... vecmath"
 	@echo "... src/image.o"
 	@echo "... src/image.i"

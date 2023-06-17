@@ -1,1 +1,0 @@
-/usr/bin/c++    -rdynamic CMakeFiles/dzy.dir/src/image.cpp.o CMakeFiles/dzy.dir/src/main.cpp.o CMakeFiles/dzy.dir/src/scene.cpp.o CMakeFiles/dzy.dir/src/texture.cpp.o  -o ../bin/dzy  deps/vecmath/libvecmath.a 
