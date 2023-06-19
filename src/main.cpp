@@ -24,11 +24,7 @@ int main(int argc, char* argv[]) {
 
     Scene scene(argv[1]);
 
-    if (!strcmp(argv[3], "rc") || !strcmp(argv[3], "pt")) {
-        int samps = atoi(argv[4]);
-        PathTracer pt(scene, samps, argv[3], argv[2]);
-        pt.render();
-    } else if (!strcmp(argv[3], "sppm")) {
+    if (!strcmp(argv[3], "sppm")) {
         int numRounds = atoi(argv[4]), numPhotons = atoi(argv[5]),
             ckpt = atoi(argv[6]);
         SPPM sppm(scene, numRounds, numPhotons, ckpt, argv[2]);

@@ -17,133 +17,21 @@
 #include "scene.hpp"
 #include "utils.hpp"
 using namespace std;
-static Vector3f ptColor(Ray ray, const Scene& scene) {
-    Group* group = scene.getGroup();
-    int depth = 0;
-    Vector3f color(0, 0, 0), cf(1, 1, 1);
-    while (true) {
-        if (++depth > TRACE_DEPTH || cf.max() < 1e-3) return color;
-        // 判断camRay是否和场景有交点,返回最近交点的数据,存储在hit中.
-        Hit hit;
-        if (!group->intersect(ray, hit)) {
-            color += scene.getBackgroundColor();
-            return color;
-        }
 
-        // Path Tracing
-        ray.origin += ray.direction * hit.t;
-        Material* material = hit.material;
-        Vector3f refColor(hit.color), N(hit.normal);
-
-        // Emission
-        color += material->emission * cf;
-        cf = cf * refColor;
-        float type = RND2;
-        if (type <= material->type.x()) {  // diffuse
-            ray.direction = diffDir(N);
-        } else if (type <=
-                   material->type.x() + material->type.y()) {  // specular
-            float cost = Vector3f::dot(ray.direction, N);
-            ray.direction = (ray.direction - N * (cost * 2)).normalized();
-        } else {  // refraction
-            float n = material->refr;
-            float R0 = ((1.0 - n) * (1.0 - n)) / ((1.0 + n) * (1.0 + n));
-            if (Vector3f::dot(N, ray.direction) > 0) {  // inside the medium
-                N.negate();
-                n = 1 / n;
-            }
-            n = 1 / n;
-            float cost1 = -Vector3f::dot(N, ray.direction);  // cosine theta_1
-            float cost2 =
-                1.0 - n * n * (1.0 - cost1 * cost1);  // cosine theta_2
-            float Rprob = R0 + (1.0 - R0) * pow(1.0 - cost1,
-                                                5.0);  // Schlick-approximation
-            if (cost2 > 0 && RND2 > Rprob) {           // refraction direction
-                ray.direction =
-                    ((ray.direction * n) + (N * (n * cost1 - sqrt(cost2))))
-                        .normalized();
-            } else {  // reflection direction
-                ray.direction = (ray.direction + N * (cost1 * 2));
-            }
-        }
-    }
-}
-
-static Vector3f rcColor(Ray ray, const Scene& scene) {
-    Group* group = scene.getGroup();
-    int depth = 0;
-    Vector3f color(0, 0, 0);
-    // 判断camRay是否和场景有交点,返回最近交点的数据,存储在hit中.
-    Hit hit;
-    if (!group->intersect(ray, hit)) {
-        color += scene.getBackgroundColor();
-        return color;
-    }
-    for (int li = 0; li < scene.getNumLights(); ++li) {
-        Light* light = scene.getLight(li);
-        Vector3f L, lightColor;
-        // 获得光照强度
-        light->getIllumination(ray.pointAtParameter(hit.getT()), L, lightColor);
-        // 计算局部光强
-        color += hit.getMaterial()->phongShade(ray, hit, L, lightColor);
-    }
-}
-
-class PathTracer {
-   public:
-    const Scene& scene;
-    int samps;
-    const char* fout;
-    Vector3f (*radiance)(Ray ray, const Scene& scene);
-    PathTracer(const Scene& scene, int samps, const char* method,
-               const char* fout)
-        : scene(scene), samps(samps), fout(fout) {
-        if (!strcmp(method, "rc"))
-            radiance = rcColor;
-        else if (!strcmp(method, "pt"))
-            radiance = ptColor;
-        else {
-            cout << "Unknown method: " << method << endl;
-            exit(1);
-        }
-    }
-
-    void render() {
-        Camera* camera = scene.getCamera();
-        int w = camera->getWidth(), h = camera->getHeight();
-        cout << "Width: " << w << " Height: " << h << endl;
-        Image outImg(w, h);
-        time_t start = time(NULL);
-#pragma omp parallel for schedule(dynamic, 1)  // OpenMP
-        for (int y = 0; y < h; ++y) {
-            float elapsed = (time(NULL) - start), progress = (1. + y) / h;
-            fprintf(stderr, "\rRendering (%d spp) %5.2f%% Time: %.2f/%.2f sec",
-                    samps, progress * 100., elapsed, elapsed / progress);
-            for (int x = 0; x < w; ++x) {
-                Vector3f color = Vector3f::ZERO;
-                for (int s = 0; s < samps; ++s) {
-                    Ray camRay =
-                        camera->generateRay(Vector2f(x + RND, y + RND));
-                    color += radiance(camRay, scene);
-                }
-                outImg.SetPixel(x, y, color / samps);
-            }
-        }
-        outImg.SaveBMP(fout);
-    }
-};
 
 class SPPM {
    public:
-    const Scene& scene;
-    int numRounds, numPhotons, ckpt_interval;
-    std::string outdir;
-    int w, h;
-    Camera* camera;
-    vector<Hit*> hitPoints;
-    HitKDTree* hitKDTree;
-    vector<Object3D*> illuminants;
-    Group* group;
+    const Scene& scene; // 场景
+    int numRounds; // 迭代次数
+    int numPhotons; // 光子数
+    int ckpt_interval; // 保存检查点的间隔迭代次数
+    std::string outdir; // 输出路径
+    int w, h; // 图像宽高
+    Camera* camera; // 相机
+    vector<Hit*> hitPoints; // hit points
+    HitKDTree* hitKDTree; // hit points 的 kd 树
+    vector<Object3D*> illuminants; // 发光物体
+    Group* group; // 物体组
     SPPM(const Scene& scene, int numRounds, int numPhotons, int ckpt,
          const char* dir)
         : scene(scene),
@@ -151,110 +39,138 @@ class SPPM {
           numPhotons(numPhotons),
           ckpt_interval(ckpt),
           outdir(dir) {
+        hitKDTree = nullptr;
+        // 获取相机和物体组与发光物体
         camera = scene.getCamera();
         group = scene.getGroup();
         illuminants = group->getIlluminant();
+        // 获取场景宽高
         w = camera->getWidth();
         h = camera->getHeight();
-        hitKDTree = nullptr;
+
+        // 初始化 hitPoints
         for (int u = 0; u < w; ++u)
             for (int v = 0; v < h; ++v) hitPoints.push_back(new Hit());
+        // 输出场景宽高
         cout << "Width: " << w << " Height: " << h << endl;
     }
 
     ~SPPM() {
+        // 销毁 hitPoints 和 hitKDTree
         for (int u = 0; u < w; ++u)
             for (int v = 0; v < h; ++v) delete hitPoints[u * w + v];
         delete hitKDTree;
     }
 
     void forward(Ray ray, Hit* hit) {
-        int depth = 0;
-        Vector3f attenuation(1, 1, 1);
-        while (true) {
-            if (++depth > TRACE_DEPTH || attenuation.max() < 1e-3) return;
-            hit->t = INF;
-            if (!group->intersect(ray, *hit)) {
-                hit->fluxLight += hit->attenuation*scene.getBackgroundColor();
-                return;
-            }
-            ray.origin += ray.direction * (*hit).t;
-            Material* material = (*hit).material;
-            Vector3f N(hit->normal);
-            float type = RND2;
-            if (type <= material->type.x()) {  // Diffuse
-                hit->attenuation = attenuation * hit->color;
-                hit->fluxLight += hit->attenuation * material->emission;
-                return;
-            } else if (type <= material->type.x() + material->type.y()) {
-                float cost = Vector3f::dot(ray.direction, N);
-                ray.direction = (ray.direction - N * (cost * 2)).normalized();
-            } else {
-                float n = material->refr;
-                float R0 = ((1.0 - n) * (1.0 - n)) / ((1.0 + n) * (1.0 + n));
-                if (Vector3f::dot(N, ray.direction) > 0) {  // inside the medium
-                    N.negate();
-                    n = 1 / n;
-                }
-                n = 1 / n;
-                float cost1 =
-                    -Vector3f::dot(N, ray.direction);  // cosine theta_1
-                float cost2 =
-                    1.0 - n * n * (1.0 - cost1 * cost1);  // cosine theta_2
-                float Rprob =
-                    R0 + (1.0 - R0) * pow(1.0 - cost1,
-                                          5.0);   // Schlick-approximation
-                if (cost2 > 0 && RND2 > Rprob) {  // refraction direction
-                    ray.direction =
-                        ((ray.direction * n) + (N * (n * cost1 - sqrt(cost2))))
-                            .normalized();
-                } else {  // reflection direction
-                    ray.direction =
-                        (ray.direction + N * (cost1 * 2)).normalized();
-                }
-            }
-            attenuation = attenuation * hit->color;
+    // 深度与衰减系数
+    int depth = 0;
+    Vector3f attenuation(1, 1, 1);
+    while (true) {
+        // 终止条件：达到追踪深度或衰减系数较小
+        if (++depth > TRACE_DEPTH || attenuation.max() < 1e-3) return;
+        hit->t = INF;
+        // 射线与场景中物体求交
+        if (!group->intersect(ray, *hit)) {
+            // 未与场景中的物体相交则将背景色添加到 hit 的发光通量中
+            hit->fluxLight += hit->attenuation*scene.getBackgroundColor();
+            return;
         }
+        // 更新射线起点并计算当前物体表面反射和透射率
+        ray.origin += ray.direction * (*hit).t;
+        Material* material = (*hit).material;
+        Vector3f N(hit->normal);
+        float type = RND2;
+        // 根据物体类型进行处理
+        if (type <= material->type.x()) {  // 漫反射
+            // 将 hit 点与相应的贡献存储到 hit point 中
+            hit->attenuation = attenuation * hit->color;
+            hit->fluxLight += hit->attenuation * material->emission;
+            return;
+        } else if (type <= material->type.x() + material->type.y()) { // 镜面反射
+            // 计算反射方向
+            float cost = Vector3f::dot(ray.direction, N);
+            ray.direction = (ray.direction - N * (cost * 2)).normalized();
+        } else { // 折射
+            float n = material->refr;
+            float R0 = ((1.0 - n) * (1.0 - n)) / ((1.0 + n) * (1.0 + n));
+            if (Vector3f::dot(N, ray.direction) > 0) {  // 入射面在介质内部
+                N.negate();
+                n = 1 / n;
+            }
+            n = 1 / n;
+            float cost1 =
+                -Vector3f::dot(N, ray.direction);  // 入射角
+            float cost2 =
+                1.0 - n * n * (1.0 - cost1 * cost1);  // 折射角
+            float Rprob =
+                R0 + (1.0 - R0) * pow(1.0 - cost1,
+                                      5.0);   // Schlick-approximation，计算反射系数
+            if (cost2 > 0 && RND2 > Rprob) {  // 折射方向
+                ray.direction =
+                    ((ray.direction * n) + (N * (n * cost1 - sqrt(cost2))))
+                        .normalized();
+            } else {  // 反射方向
+                ray.direction =
+                    (ray.direction + N * (cost1 * 2)).normalized();
+            }
+        }
+        // 更新衰减系数，即当前区域所受到的颜色衰减情况
+        attenuation = attenuation * hit->color;
     }
+}
+
 
     void backward(Ray ray, const Vector3f& color, long long int seed=-1) {
+        // 深度与衰减系数
         int depth = 0;
         Vector3f attenuation = color * Vector3f(250, 250, 250);
         while (true) {
+            // 终止条件：达到追踪深度或衰减系数较小
             if (++depth > TRACE_DEPTH || attenuation.max() < 1e-3) return;
+            // 射线与场景中物体求交
             Hit hit;
             if (!group->intersect(ray, hit)) return;
             ray.origin += ray.direction * hit.t;
             Material* material = hit.material;
             Vector3f N(hit.normal);
             float type = RND2;
-            if (type <= material->type.x()) {  // Diffuse
+            //  根据物体类型进行处理
+            //  漫反射
+            if (type <= material->type.x()) {  
+                // 将 hit 点与相应的贡献存储到 hit point 中
                 hitKDTree->update(hitKDTree->root, hit.p, attenuation,
                                   ray.direction);
+                // 生成新的射线，方向为半球随机方向
                 ray.direction = diffDir(N, -1, seed);
             } else if (type <= material->type.x() + material->type.y()) {
+                // 镜面反射
                 float cost = Vector3f::dot(ray.direction, N);
                 ray.direction = (ray.direction - N * (cost * 2)).normalized();
             } else {
+                // 折射
                 float n = material->refr;
                 float R0 = ((1.0 - n) * (1.0 - n)) / ((1.0 + n) * (1.0 + n));
-                if (Vector3f::dot(N, ray.direction) > 0) {  // inside the medium
+                if (Vector3f::dot(N, ray.direction) > 0) {  
                     N.negate();
                     n = 1 / n;
                 }
                 n = 1 / n;
+                // 计算反射系数
                 float cost1 =
-                    -Vector3f::dot(N, ray.direction);  // cosine theta_1
+                    -Vector3f::dot(N, ray.direction);  
                 float cost2 =
-                    1.0 - n * n * (1.0 - cost1 * cost1);  // cosine theta_2
+                    1.0 - n * n * (1.0 - cost1 * cost1);  
                 float Rprob =
                     R0 + (1.0 - R0) * pow(1.0 - cost1,
-                                          5.0);   // Schlick-approximation
-                if (cost2 > 0 && RND2 > Rprob) {  // refraction direction
+                                          5.0);  
+                // 根据反射系数判断反射或折射
+                if (cost2 > 0 && RND2 > Rprob) {  
+                    // 计算折射方向
                     ray.direction =
                         ((ray.direction * n) + (N * (n * cost1 - sqrt(cost2))))
                             .normalized();
-                } else {  // reflection direction
+                } else {  // 计算反射方向
                     ray.direction =
                         (ray.direction + N * (cost1 * 2)).normalized();
                 }
@@ -264,46 +180,52 @@ class SPPM {
     }
 
     void render() {
-        time_t start = time(NULL);
-        Vector3f color = Vector3f::ZERO;
-        for (int round = 0; round < numRounds; ++round) {
-            float elapsed = (time(NULL) - start),
-                  progress = (1. + round) / numRounds;
-            fprintf(stderr,
-                    "\rRendering (%d/%d Rounds) %5.2f%% Time: %.2f/%.2f sec\n",
-                    round + 1, numRounds, progress * 100., elapsed,
-                    elapsed / progress);
+    time_t start = time(NULL);
+    Vector3f color = Vector3f::ZERO;
+    // 进行多轮迭代
+    for (int round = 0; round < numRounds; ++round) {
+        float elapsed = (time(NULL) - start),
+              progress = (1. + round) / numRounds;
+        // 打印当前迭代的进度信息
+        fprintf(stderr,
+                "\rRendering (%d/%d Rounds) %5.2f%% Time: %.2f/%.2f sec\n",
+                round + 1, numRounds, progress * 100., elapsed,
+                elapsed / progress);
 #pragma omp parallel for schedule(dynamic, 1)
-            for (int x = 0; x < w; ++x) {
-                for (int y = 0; y < h; ++y) {
-                    Ray camRay =
-                        camera->generateRay(Vector2f(x + RND, y + RND));
-                    hitPoints[x * h + y]->reset(-camRay.direction);
-                    forward(camRay, hitPoints[x * h + y]);
-                }
-            }
-            setHitKDTree();
-            int photonsPerLight = numPhotons / illuminants.size();
-// photon tracing pass
-#pragma omp parallel for schedule(dynamic, 1)
-            for (int i = 0; i < photonsPerLight; ++i) {
-                for (int j = 0;j < illuminants.size(); ++j) {
-                    // cout << i << " "<< j << " In" <<endl;
-                    Ray ray = illuminants[j]->randomRay(-1, (long long)round * numPhotons + (round + 1) * w * h + i);
-                    // cout << i << " "<< j << " Out" <<endl;
-                    backward(ray, illuminants[j]->material->emission, (long long)round * numPhotons + i);
-                } 
-            }
-            if ((round + 1) % ckpt_interval == 0) {
-                char filename[100];
-                sprintf(filename, "ckpt-%d.bmp", round + 1);
-                save(filename, round + 1, numPhotons);
+        // 对每个像素点进行前向追踪计算
+        for (int x = 0; x < w; ++x) {
+            for (int y = 0; y < h; ++y) {
+                Ray camRay =
+                    camera->generateRay(Vector2f(x + RND, y + RND));
+                hitPoints[x * h + y]->reset(-camRay.direction);
+                forward(camRay, hitPoints[x * h + y]);
             }
         }
-        save("result.bmp", numRounds, numPhotons);
+        // 将 hitPoints 存储到 KD 树中
+        setHitKDTree();
+        int photonsPerLight = numPhotons / illuminants.size();
+        // 对每个发光物体，随机生成一定数量的光子，并对其进行后向追踪计算
+#pragma omp parallel for schedule(dynamic, 1)
+        for (int i = 0; i < photonsPerLight; ++i) {
+            for (int j = 0;j < illuminants.size(); ++j) {
+                Ray ray = illuminants[j]->randomRay(-1, (long long)round * numPhotons + (round + 1) * w * h + i);
+                backward(ray, illuminants[j]->material->emission, (long long)round * numPhotons + i);
+            } 
+        }
+        // 每隔一定迭代次数保存检查点
+        if ((round + 1) % ckpt_interval == 0) {
+            char filename[100];
+            sprintf(filename, "ckpt-%d.bmp", round + 1);
+            save(filename, round + 1, numPhotons);
+        }
+    }
+    // 将最终计算的图像输出到文件
+    save("result.bmp", numRounds, numPhotons);
     }
 
+
     void save(std::string filename, int numRounds, int numPhotons) {
+    // 将 hitPoints 中的贡献输出到图像中
         Image outImg(w, h);
         for (int u = 0; u < w; ++u)
             for (int v = 0; v < h; ++v) {
