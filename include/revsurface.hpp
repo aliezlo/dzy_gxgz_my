@@ -11,70 +11,28 @@ const int resolution = 10;
 const int NEWTON_STEPS = 20;
 const float NEWTON_EPS = 1e-4;
 class RevSurface : public Object3D {
-    Curve *pCurve;
-    AABB aabb;
-    // Definition for drawable surface.
+public:    
+    Curve *pCurve; // 旋转曲面的截面曲线
+    AABB aabb; //包围盒
+    
     typedef std::tuple<unsigned, unsigned, unsigned> Tup3u;
     std::vector<Triangle> triangles;
-    // Surface is just a struct that contains vertices, normals, and
-    // faces.  VV[i] is the position of vertex i, and VN[i] is the normal
-    // of vertex i.  A face is a triple i,j,k corresponding to a triangle
-    // with (vertex i, normal i), (vertex j, normal j), ...
-    // Currently this struct is computed every time when canvas refreshes.
-    // You can store this as member function to accelerate rendering.
-   public:
+    
+public:
     RevSurface(Curve *pCurve, Material *material)
         : pCurve(pCurve), Object3D(material) {
-        // Check flat.
+        // 检查曲线是否在xy平面上
         for (const auto &cp : pCurve->getControls()) {
             if (cp.z() != 0.0) {
                 printf("Profile of revSurface must be flat on xy plane.\n");
                 exit(0);
             }
         }
+        // 设置包围盒参数
         aabb.set(Vector3f(-pCurve->radius, pCurve->ymin - 3, -pCurve->radius),
                  Vector3f(pCurve->radius, pCurve->ymax + 3, pCurve->radius));
-        // meshInit();
+        
     }
-
-    // void meshInit() {
-    //     std::vector<Vector3f> VV;
-    //     std::vector<Vector3f> VN;
-    //     std::vector<Tup3u> VF;
-    //     std::vector<CurvePoint> curvePoints;
-    //     pCurve->discretize(resolution, curvePoints);
-    //     const int steps = 40;
-    //     for (unsigned int ci = 0; ci < curvePoints.size(); ++ci) {
-    //         const CurvePoint &cp = curvePoints[ci];
-    //         for (unsigned int i = 0; i < steps; ++i) {
-    //             float t = (float)i / steps;
-    //             Quat4f rot;
-    //             // 生成参数曲面
-    //             rot.setAxisAngle(t * 2 * 3.14159, Vector3f::UP);
-    //             Vector3f pnew = Matrix3f::rotation(rot) * cp.V;
-    //             Vector3f pNormal = Vector3f::cross(cp.T, -Vector3f::FORWARD);
-    //             Vector3f nnew = Matrix3f::rotation(rot) * pNormal;
-    //             VV.push_back(pnew);
-    //             VN.push_back(nnew);
-    //             int i1 = (i + 1 == steps) ? 0 : i + 1;
-    //             if (ci != curvePoints.size() - 1) {
-    //                 // 把四边形剖分成两个三角形
-    //                 VF.emplace_back((ci + 1) * steps + i, ci * steps + i1,
-    //                                 ci * steps + i);
-    //                 VF.emplace_back((ci + 1) * steps + i, (ci + 1) * steps +
-    //                 i1,
-    //                                 ci * steps + i1);
-    //             }
-    //         }
-    //     }
-    //     for (int i = 0; i < VF.size(); ++i) {
-    //         Triangle t(VV[std::get<0>(VF[i])], VV[std::get<1>(VF[i])],
-    //                    VV[std::get<2>(VF[i])], material);
-    //         t.setVNorm(VN[std::get<0>(VF[i])], VN[std::get<1>(VF[i])],
-    //                    VN[std::get<2>(VF[i])]);
-    //         triangles.push_back(t);
-    //     }
-    // }
 
     ~RevSurface() override { delete pCurve; }
 

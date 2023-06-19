@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 ROUNDS=5000
-PHOTONS=100000
+PHOTONS=1000000
 CKPT_INTERVAL=5
 METHOD=sppm
 # delete old build
