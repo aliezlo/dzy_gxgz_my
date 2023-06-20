@@ -43,39 +43,28 @@ public:
     // 射线与盒子的相交测试，返回是否相交并传出最小相交距离t_min
     bool intersect(const Ray &r, float &t_min) {
         Vector3f o(r.getOrigin()), invdir(1 / r.getDirection());
-        vector<int> sgn = {invdir.x() < 0, invdir.y() < 0, invdir.z() < 0};
-        t_min = INF;
-        float tmin_x, tmax_x, tmin_y, tmax_y, tmin_z, tmax_z;
-        tmin_x = (bounds[sgn[0]].x() - o.x()) * invdir.x();
-        tmax_x = (bounds[1 - sgn[0]].x() - o.x()) * invdir.x();
-        tmin_y = (bounds[sgn[1]].y() - o.y()) * invdir.y();
-        tmax_y = (bounds[1 - sgn[1]].y() - o.y()) * invdir.y();
+        bool sign[3];
+        float t_near[3], t_far[3];
+        int k;
 
-        // 判断x轴方向与y轴方向的相交情况
-        if ((tmin_x > tmax_y) || (tmin_y > tmax_x)) {
-            return false;
+        // 计算每个坐标轴上射线对应的 t 值范围
+        for (int i = 0; i < 3; i++) {
+            t_near[i] = (bounds[sign[i] = invdir[i] < 0 ? 1 : 0][i] - o[i]) * invdir[i];
+            t_far[i] = (bounds[!sign[i]][i] - o[i]) * invdir[i];
         }
 
-        // 更新最小和最大相交距离
-        tmin_x = std::max(tmin_x, tmin_y);
-        tmax_x = std::min(tmax_x, tmax_y);
+        // 找到 t 值范围的最大值和最小值
+        float t_max_near = std::max(std::max(t_near[0], t_near[1]), t_near[2]);
+        float t_min_far = std::min(std::min(t_far[0], t_far[1]), t_far[2]);
 
-        tmin_z = (bounds[sgn[2]].z() - o.z()) * invdir.z();
-        tmax_z = (bounds[1 - sgn[2]].z() - o.z()) * invdir.z();
-
-        // 判断z轴方向的相交情况
-        if ((tmin_x > tmax_z) || (tmin_z > tmax_x)) {
+        // 判断是否有相交
+        if (t_max_near <= t_min_far) {
+            t_min = t_max_near;
+            return true;
+        }
+        else {
             return false;
         }
-
-        // 更新最小和最大相交距离
-        tmin_x = std::max(tmin_x, tmin_z);
-        tmax_x = std::min(tmax_x, tmax_z);
-
-        // 将最小相交距离传出
-        t_min = tmin_x;
-
-        return true;
     }
 };
 
@@ -93,7 +82,7 @@ public:
         Vector3f o(r.getOrigin()), dir(r.getDirection());
         Vector3f OC(-o);
 
-        // 计算OC在射线方向的投影长度OH: OC@OH/|OH|
+        // 计算OC在射线方向的投影长度OH: OC点乘OH/|OH|
         float OH = Vector3f::dot(OC, dir);
 
         // 计算CH的长度

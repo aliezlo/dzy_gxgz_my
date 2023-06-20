@@ -9,6 +9,8 @@
 #include "utils.hpp"
 #include <vecmath.h>
 const float INF_FOCAL_LENGTH = 0x3f3f3f3f;
+
+//相机类，除了aperture, focalLength外，与RayTracer中的相机类相同
 class Camera {
    public:
     Camera(const Vector3f &center, const Vector3f &direction,
@@ -82,6 +84,10 @@ class PerspectiveCamera : public Camera {
     }
 
     Ray generateRay(const Vector2f &point) override {
+        //与RayTracer中的相机类不同，这里新增了光圈的概念
+        //dx和dy是光圈的偏移量，光圈的大小由aperture决定
+        //光圈的偏移量是随机的，这样可以模拟出景深的效果
+        //除了景深之外，也可以实现运动模糊，需要对方向向量添加一个运动方向的偏移量
         float csx = focalLength * (point.x() - cx) / fx;
         float csy = focalLength * (point.y() - cy) / fy;
         float dx = RND * aperture, dy = RND * aperture;
