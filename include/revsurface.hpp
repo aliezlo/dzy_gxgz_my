@@ -7,153 +7,122 @@
 #include "curve.hpp"
 #include "object3d.hpp"
 #include "triangle.hpp"
-const int resolution = 10;
-const int NEWTON_STEPS = 20;
-const float NEWTON_EPS = 1e-4;
+
+const int resolution = 10; // 曲面离散化时的分辨率
+const int NEWTON_STEPS = 20; // 牛顿迭代求解交点最大迭代次数
+const float NEWTON_EPS = 1e-4; // 牛顿迭代求解交点的误差阈值
+const float NEWTON_DELTA = 1e-6; // 牛顿迭代求解交点的步长
+
 class RevSurface : public Object3D {
-    Curve *pCurve;
-    AABB aabb;
-    // Definition for drawable surface.
+private:
+    Curve *pCurve; // 绕z轴旋转而来的曲线
+    AABB aabb; // 该物体的包围盒
+    // 下面三个参数用于表示可绘制表面
     typedef std::tuple<unsigned, unsigned, unsigned> Tup3u;
+    // 三角形面片
     std::vector<Triangle> triangles;
-    // Surface is just a struct that contains vertices, normals, and
-    // faces.  VV[i] is the position of vertex i, and VN[i] is the normal
-    // of vertex i.  A face is a triple i,j,k corresponding to a triangle
-    // with (vertex i, normal i), (vertex j, normal j), ...
-    // Currently this struct is computed every time when canvas refreshes.
-    // You can store this as member function to accelerate rendering.
-   public:
-    RevSurface(Curve *pCurve, Material *material)
-        : pCurve(pCurve), Object3D(material) {
-        // Check flat.
+
+public:
+    // 构造函数
+    RevSurface(Curve *pCurve, Material *material) :
+        pCurve(pCurve), Object3D(material)
+    {
+        // 检查曲线是否在xy平面上
         for (const auto &cp : pCurve->getControls()) {
             if (cp.z() != 0.0) {
                 printf("Profile of revSurface must be flat on xy plane.\n");
                 exit(0);
             }
         }
+        // 计算并设置物体的包围盒
         aabb.set(Vector3f(-pCurve->radius, pCurve->ymin - 3, -pCurve->radius),
                  Vector3f(pCurve->radius, pCurve->ymax + 3, pCurve->radius));
-        // meshInit();
     }
 
-    // void meshInit() {
-    //     std::vector<Vector3f> VV;
-    //     std::vector<Vector3f> VN;
-    //     std::vector<Tup3u> VF;
-    //     std::vector<CurvePoint> curvePoints;
-    //     pCurve->discretize(resolution, curvePoints);
-    //     const int steps = 40;
-    //     for (unsigned int ci = 0; ci < curvePoints.size(); ++ci) {
-    //         const CurvePoint &cp = curvePoints[ci];
-    //         for (unsigned int i = 0; i < steps; ++i) {
-    //             float t = (float)i / steps;
-    //             Quat4f rot;
-    //             // 生成参数曲面
-    //             rot.setAxisAngle(t * 2 * 3.14159, Vector3f::UP);
-    //             Vector3f pnew = Matrix3f::rotation(rot) * cp.V;
-    //             Vector3f pNormal = Vector3f::cross(cp.T, -Vector3f::FORWARD);
-    //             Vector3f nnew = Matrix3f::rotation(rot) * pNormal;
-    //             VV.push_back(pnew);
-    //             VN.push_back(nnew);
-    //             int i1 = (i + 1 == steps) ? 0 : i + 1;
-    //             if (ci != curvePoints.size() - 1) {
-    //                 // 把四边形剖分成两个三角形
-    //                 VF.emplace_back((ci + 1) * steps + i, ci * steps + i1,
-    //                                 ci * steps + i);
-    //                 VF.emplace_back((ci + 1) * steps + i, (ci + 1) * steps +
-    //                 i1,
-    //                                 ci * steps + i1);
-    //             }
-    //         }
-    //     }
-    //     for (int i = 0; i < VF.size(); ++i) {
-    //         Triangle t(VV[std::get<0>(VF[i])], VV[std::get<1>(VF[i])],
-    //                    VV[std::get<2>(VF[i])], material);
-    //         t.setVNorm(VN[std::get<0>(VF[i])], VN[std::get<1>(VF[i])],
-    //                    VN[std::get<2>(VF[i])]);
-    //         triangles.push_back(t);
-    //     }
-    // }
+    
 
     ~RevSurface() override { delete pCurve; }
 
     inline bool intersect(const Ray &r, Hit &h) override {
-        // return meshIntersect(r, h, tmin);
-        return newtonIntersect(r, h);
-    }
-
-    bool newtonIntersect(const Ray &r, Hit &h) {
+        // t：光线与包围盒的交点距离；theta：光线与z轴的夹角；mu：光线与曲线的交点在参数空间内的坐标
         float t, theta, mu;
+        // 与包围盒不相交，则不存在交点，返回 false
         if (!aabb.intersect(r, t) || t > h.getT()) return false;
+        // 获取光线和曲面的交点在参数空间内的坐标
         getUV(r, t, theta, mu);
         Vector3f normal, point;
-        // cout << "begin!" << endl;
+        // 如果使用牛顿迭代法无法求解交点，则不存在交点，返回 false
         if (!newton(r, t, theta, mu, normal, point)) {
-            // cout << "Not Intersect! t:" << t << " theta: " << theta / (2 *
-            // M_PI)
-            //      << " mu: " << mu << endl;
             return false;
         }
+        // 如果交点参数不在有效范围内或者交点距离大于当前最近的交点距离，则不存在交点，返回 false
         if (!isnormal(mu) || !isnormal(theta) || !isnormal(t)) return false;
-        if (t < 0 || mu < pCurve->range[0] || mu > pCurve->range[1] ||
-            t > h.getT())
+        if (t < 0 || mu < pCurve->range[0] || mu > pCurve->range[1] || t > h.getT())
             return false;
+        // 设置 Hit 结构体记录碰撞信息，返回 true 表示存在交点
         h.set(t, material, normal.normalized(),
-              material->getColor(theta / (2 * M_PI), mu), point);
-        // cout << "Intersect! t:" << t << " theta: " << theta / (2 * M_PI)
-        //      << " mu: " << mu << endl;
+            material->getColor(theta / (2 * M_PI), mu), point);
         return true;
     }
 
-    // bool meshIntersect(const Ray &r, Hit &h, float tmin) {
-    //     if (triangles.size() == 0) meshInit();
-    //     float tb;
-    //     if (!aabb.intersect(r, tb)) return false;
-    //     if (tb > h.getT()) return false;
-    //     bool flag = false;
-    //     for (auto triangle : triangles) flag |= triangle.intersect(r, h,
-    //     tmin); return flag;
-    // }
-
-    bool newton(const Ray &r, float &t, float &theta, float &mu,
-                Vector3f &normal, Vector3f &point) {
+    bool newton(const Ray &ray, float &t, float &theta, float &mu,
+            Vector3f &normal, Vector3f &point) {
         Vector3f dmu, dtheta;
+        // 进行牛顿迭代求解光线和曲面的交点
         for (int i = 0; i < NEWTON_STEPS; ++i) {
+            // 控制分段宽度变化
             if (theta < 0.0) theta += 2 * M_PI;
-            if (theta >= 2 * M_PI) theta = fmod(theta, 2 * M_PI);
-            if (mu >= 1) mu = 1.0 - FLT_EPSILON;
-            if (mu <= 0) mu = FLT_EPSILON;
+            if (theta >= 2 * M_PI) theta -= 2 * M_PI;
+            if (mu > 1.0 - FLT_EPSILON) mu = 1.0 - FLT_EPSILON;
+            if (mu < FLT_EPSILON) mu = FLT_EPSILON;
+            // 计算当前迭代点在曲面上的坐标、偏导数和法向量
             point = getPoint(theta, mu, dtheta, dmu);
-            Vector3f f = r.origin + r.direction * t - point;
+            Vector3f f = ray.origin + ray.direction * t - point;
             float dist2 = f.squaredLength();
-            // cout << "Iter " << i + 1 << " t: " << t
-            //      << " theta: " << theta / (2 * M_PI) << " mu: " << mu
-            //      << " dist2: " << dist2 << endl;
-            normal = Vector3f::cross(dmu, dtheta);
+            // 如果当前点与曲面距离已经足够小，则认为找到了交点，返回 true
             if (dist2 < NEWTON_EPS) return true;
-            float D = Vector3f::dot(r.direction, normal);
-            t -= Vector3f::dot(dmu, Vector3f::cross(dtheta, f)) / D;
-            mu -= Vector3f::dot(r.direction, Vector3f::cross(dtheta, f)) / D;
-            theta += Vector3f::dot(r.direction, Vector3f::cross(dmu, f)) / D;
+            // 计算方程需要使用的值
+            normal = Vector3f::cross(dmu, dtheta);
+            float D = Vector3f::dot(ray.direction, normal);
+            // 如果 D 非常接近 0，则已经无法继续迭代，故返回 false 表示无法求解交点。
+            if (std::abs(D) <= NEWTON_DELTA) return false;
+            // 更新牛顿迭代的参数
+            float dt = Vector3f::dot(dmu, Vector3f::cross(dtheta, f)) / D;
+            float dmu_ = Vector3f::dot(ray.direction, Vector3f::cross(dtheta, f)) / D;
+            float dtheta_ = Vector3f::dot(ray.direction, Vector3f::cross(dmu, f)) / D;
+            // 检查当前计算的参数值是否有越界的情况
+            if (mu - dmu_ < FLT_EPSILON || mu - dmu_ > 1.0 - FLT_EPSILON) {
+                return false;
+            }
+            theta += dtheta_;
+            mu -= dmu_;
+            t -= dt;
         }
+        // 如果迭代次数达到了上限仍未找到交点，则返回 false 表示不存在交点
         return false;
     }
 
-    Vector3f getPoint(const float &theta, const float &mu, Vector3f &dtheta,
-                      Vector3f &dmu) {
-        Vector3f pt;
+
+    Vector3f getPoint(const float &theta, const float &mu, Vector3f &dtheta, Vector3f &dmu) {
+        // 首先，根据经度 theta 构建旋转矩阵 rotMat
         Quat4f rot;
         rot.setAxisAngle(theta, Vector3f::UP);
         Matrix3f rotMat = Matrix3f::rotation(rot);
+
+        // 然后，调用 Curve 类的 getPoint 方法，获取纬度 mu 处的点 cp
         CurvePoint cp = pCurve->getPoint(mu);
-        pt = rotMat * cp.V;
+        // 将 cp 中的点 P 乘上旋转矩阵 rotMat，得到最终的点坐标 pt
+        Vector3f pt = rotMat * cp.V;
+
+        // 计算经度方向和纬度方向的偏导数 dtheta 和 dmu
         dmu = rotMat * cp.T;
         dtheta = Vector3f(-cp.V.x() * sin(theta), 0, -cp.V.x() * cos(theta));
+        // 最后，返回点 P 的坐标
         return pt;
     }
 
     void getUV(const Ray &r, const float &t, float &theta, float &mu) {
+    // 根据交点 pt 计算其球面坐标系下的经度 theta 和纬度 mu
         Vector3f pt(r.origin + r.direction * t);
         theta = atan2(-pt.z(), pt.x()) + M_PI;
         mu = (pCurve->ymax - pt.y()) / (pCurve->ymax - pCurve->ymin);
