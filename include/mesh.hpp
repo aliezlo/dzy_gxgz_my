@@ -138,36 +138,40 @@ Mesh(const char *filename, Material *m) : Object3D(m) {
         delete kdTree;
     }
 
+    // 从给定字符串中按照指定模式拆分出多个子字符串
     std::vector<std::string> split(std::string str, std::string pattern) {
         std::string::size_type pos;
         std::vector<std::string> result;
+        // 将待拆分的字符串末尾添加模式字符串，目的是保证最后一个子串一定能够被提取出来
         str += pattern;
         int size = str.size();
 
         for (int i = 0; i < size; i++) {
-            pos = str.find(pattern, i);
-            if (pos < size) {
+            pos = str.find(pattern, i); // 从当前位置开始查找模式字符串
+            if (pos < size) { // 如果找到了模式字符串
+                // 提取从 i 到 pos 之间的子串，并将其存入结果向量中
                 std::string s = str.substr(i, pos - i);
                 result.push_back(s);
-                i = pos + pattern.size() - 1;
+                i = pos + pattern.size() - 1; // 更新 i 为下一个要查找的位置
             }
         }
-        return result;
+        return result; // 返回拆分后的字符串向量
     }
 
     
     vector<Object3D *> triangles;
     bool intersect(const Ray &r, Hit &h) override {
         float tb;
+        //如果光线与包围盒不相交，返回 false
         if (!aabb.intersect(r, tb)) return false;
+        //如果光线与包围盒相交，但是交点距离比当前最近交点还要远，返回 false
         if (tb > h.getT()) return false;
-        // kd-tree search
+        //kd-tree 加速求交
         bool flag = kdTree->intersect(r, h);
         return flag;
-        // sequential search
-        // return sequentialSearch(r, h);
     }
 
+    // 顺序求交
     bool sequentialSearch(const Ray &r, Hit &h) {
         bool result = false;
         for (auto triangle : triangles) result |= triangle->intersect(r, h);
@@ -179,7 +183,11 @@ Mesh(const char *filename, Material *m) : Object3D(m) {
     Vector3f center() const override {
         return (aabb.bounds[0] + aabb.bounds[1]) / 2;
     }
+    
+    //返回所有三角形面片
     vector<Object3D *> getFaces() override { return {(Object3D *)this}; }
+    
+    // randomRay() 函数用于随机生成一条光线,axis为光线的方向
     Ray randomRay(int axis=-1, long long int seed=0) const override {
         int trig = random(axis, seed) * triangles.size();
         return triangles[trig]->randomRay(axis, seed);

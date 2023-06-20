@@ -7,6 +7,7 @@
 #include "ray.hpp"
 #include "utils.hpp"
 #include <vecmath.h>
+//光源类，在原版的基础上新增了圆盘光源
 class Light {
    public:
     Light() = default;
@@ -17,7 +18,7 @@ class Light {
                                  Vector3f &col) const = 0;
     virtual void type() const = 0;
 };
-
+//平行光
 class DirectionalLight : public Light {
    public:
     DirectionalLight() = delete;
@@ -46,7 +47,7 @@ class DirectionalLight : public Light {
     Vector3f direction;
     Vector3f color;
 };
-
+//点光源
 class PointLight : public Light {
    public:
     PointLight() = delete;
@@ -75,7 +76,7 @@ class PointLight : public Light {
     Vector3f position;
     Vector3f color;
 };
-
+//圆盘光源
 class DiskLight : public Light {
    public:
     DiskLight() = delete;

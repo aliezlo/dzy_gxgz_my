@@ -28,6 +28,7 @@ class Material {
 
     virtual ~Material() = default;
 
+    //获取材质的颜色（包括纹理）
     Vector3f getColor(float u, float v) const {
         if (!texture.pic)
             return color;
@@ -38,6 +39,23 @@ class Material {
     Vector3f phongShade(const Ray &ray, const Hit &hit,
                         const Vector3f &dirToLight,
                         const Vector3f &lightColor) {
+        //phong模型，与原版一致。
+        /*原版：Vector3f shaded = Vector3f::ZERO;
+        Vector3f L = dirToLight.normalized();
+        Vector3f N = hit.getNormal().normalized();
+        Vector3f V = -ray.getDirection().normalized();
+        Vector3f C = lightColor;
+        Vector3f R = 2 * Vector3f::dot(L, N) * N - L;
+        Vector3f D = diffuseColor;
+        Vector3f S = specularColor; 
+        float s = shininess;
+        if (Vector3f::dot(L, N) > 0) {
+            shaded += Vector3f::dot(L, N) * D * C;
+            if (Vector3f::dot(R, V) > 0) {
+                shaded += pow(Vector3f::dot(R, V), s) * S * C;
+            }
+        }
+        return shaded;*/
         Vector3f N = hit.getNormal(), V = -ray.getDirection().normalized();
         Vector3f Lx = dirToLight.normalized();
         Vector3f Rx = (2 * (Vector3f::dot(Lx, N)) * N - Lx).normalized();
