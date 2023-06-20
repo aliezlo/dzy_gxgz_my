@@ -7,15 +7,16 @@
 #include "ray.hpp"
 class Material;
 
+//交点类，相比于原来的hit类，增加了一些属性：衰减，法向量，辐射通量，光通量，颜色
 class Hit {
    public:
     // constructors
     Hit() {
-        material = nullptr;
-        t = INF;
-        r2 = INIT_RADIUS;
-        attenuation = Vector3f(1);
-        normal = fluxLight = flux = color = Vector3f::ZERO;
+        material = nullptr;//材质
+        t = INF;//交点距离
+        r2 = INIT_RADIUS;//距离平方
+        attenuation = Vector3f(1);//衰减
+        normal = fluxLight = flux = color = Vector3f::ZERO;//法向量，辐射通量，光通量，颜色
         n = 0;
     }
 
@@ -34,6 +35,7 @@ class Hit {
     Material *getMaterial() const { return material; }
 
     const Vector3f &getNormal() const { return normal; }
+    //重新设置交点，用于sppm中的多次迭代
     void reset(const Vector3f &_d) {
         t = INF;
     }

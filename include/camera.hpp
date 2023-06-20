@@ -10,7 +10,7 @@
 #include <vecmath.h>
 const float INF_FOCAL_LENGTH = 0x3f3f3f3f;
 
-//相机类，除了aperture, focalLength外，与RayTracer中的相机类相同
+//相机类，除了新增aperture（光圈参数）, focalLength外，与RayTracer中的相机类相同
 class Camera {
    public:
     Camera(const Vector3f &center, const Vector3f &direction,

@@ -20,9 +20,9 @@ cmake --build . --parallel
 cd ..
 
 # Run sppm.
-mkdir -p sppm_output/scene06_bunny_1k_vn
-time bin/dzy testcases/scene06_bunny_1k_vn.txt sppm_output/scene06_bunny_1k_vn_x $METHOD $ROUNDS $PHOTONS $CKPT_INTERVAL
-#mkdir -p sppm_output/scene10_wineglass
-#time bin/dzy testcases/scene10_wineglass.txt sppm_output/scene10_wineglass_y $METHOD $ROUNDS $PHOTONS $CKPT_INTERVAL
+#mkdir -p sppm_output/scene06_bunny_1k_vn
+#time bin/dzy testcases/scene06_bunny_1k_vn.txt sppm_output/scene06_bunny_1k_vn_x $METHOD $ROUNDS $PHOTONS $CKPT_INTERVAL
+mkdir -p sppm_output/scene10_wineglass
+time bin/dzy testcases/scene10_wineglass.txt sppm_output/scene10_wineglass_y $METHOD $ROUNDS $PHOTONS $CKPT_INTERVAL
 #mkdir -p sppm_output/scene10_wineglass
 #time bin/dzy_curve testcases/scene10_wineglass.txt sppm_output/scene10_wineglass_curve $METHOD $ROUNDS $PHOTONS $CKPT_INTERVAL
