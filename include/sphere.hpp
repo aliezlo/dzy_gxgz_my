@@ -32,12 +32,12 @@ public:
             t = t2;
         else
             return false;
-        Vector3f OP(o + dir * t - cen);
-        Vector3f normal = OP.normalized();
+        Vector3f OP(o + dir * t - cen); //计算交点坐标
+        Vector3f normal = OP.normalized(); // 计算交点处的法向量
         float u = 0.5 + atan2(normal.x(), normal.z()) / (2 * M_PI),
               v = 0.5 - asin(normal.y()) / M_PI;   // 计算球体的纹理坐标
         h.set(t, material, getNormal(normal, OP, u, v),
-              material->getColor(u, v), o + dir * t);
+              material->getColor(u, v), o + dir * t);//计算交点颜色，储存交点信息
         return true;
     }
 
@@ -45,11 +45,16 @@ public:
     Vector3f getNormal(const Vector3f &n, const Vector3f &p, float u, float v) {
         Vector2f grad(0);
         float f = material->bump.getDisturb(u, v, grad);   // 计算凹凸纹理产生的影响
-        if (fabs(f) < FLT_EPSILON) return n;
-        float phi = u * 2 * M_PI, theta = M_PI - v * M_PI;
+        if (fabs(f) < FLT_EPSILON) return n; // 凹凸纹理影响过小，直接返回法向量
+        
+        // 计算球体的纹理坐标，phi：经度，theta：纬度
+        float phi = u * 2 * M_PI, theta = M_PI - v * M_PI; 
+        // 计算球体考虑纹理影响后的法向量变化值
         Vector3f pu(-p.z(), 0, p.x()),
-            pv(p.y() * cos(phi), -radius * sin(theta), p.y() * sin(phi));
+            pv(p.y() * cos(phi), -radius * sin(theta), p.y() * sin(phi)); 
+        // 如果法向量变化值过小，直接返回法向量
         if (pu.squaredLength() < FLT_EPSILON) return n;
+        //返回考虑纹理影响后的法向量
         return Vector3f::cross(pu + n * grad[0] / (2 * M_PI),
                                pv + n * grad[1] / M_PI)
             .normalized();

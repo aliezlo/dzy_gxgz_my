@@ -20,6 +20,7 @@ class RevSurface;
 class DiskLight;
 #define MAX_PARSER_TOKEN_LENGTH 1024
 
+//场景类，用于存储场景信息
 class Scene {
    public:
     Scene() = delete;

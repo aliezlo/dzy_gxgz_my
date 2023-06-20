@@ -5,9 +5,9 @@
 #include <cmath>
 #include "object3d.hpp"
 
-// TODO: 实现表示无限平面的类Plane
-// 平面方程：ax+by+cz=d
 
+
+// 平面类
 class Plane : public Object3D {
    public:
     // 构造函数

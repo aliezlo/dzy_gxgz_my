@@ -4,7 +4,7 @@
 #include <cassert>
 #include <iostream>
 
-// 视线
+// 视线类，与原版一致
 // Ray class mostly copied from Peter Shirley and Keith Morley
 class Ray {
    public:
